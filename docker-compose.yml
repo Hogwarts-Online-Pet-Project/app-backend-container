@@ -1,0 +1,36 @@
+version: '3'
+
+services:
+  app_mysql:
+    container_name: app_mysql
+    image: mysql:8
+    restart: always
+    ports:
+      - 3307:3306
+    env_file:
+        - .env
+    volumes:
+      - hogwarts_mysql_volume:/var/lib/mysql/
+    healthcheck:
+      test: [ "CMD", "mysqladmin", "ping", "-h", "localhost" ]
+      timeout: 10s
+      retries: 10
+    networks:
+      - main
+  app_backend:
+    container_name: app_backend
+    build: ./backend
+    depends_on:
+      app_mysql:
+        condition: service_healthy
+    networks:
+      - main
+    ports:
+      - 8547:8547
+    # command: npm run container # run for initializing db and applying migrations
+    command: npm run dev # run after applying migrations
+
+volumes:
+  hogwarts_mysql_volume:
+networks:
+  main:
