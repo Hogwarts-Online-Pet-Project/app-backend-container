@@ -1,0 +1,188 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model chat {
+  ID_Chat      Int @id @default(autoincrement())
+  Chat_Message Int
+
+  @@index([Chat_Message], map: "Chat_Message")
+}
+
+model contract {
+  ID_Contract         Int      @id @default(autoincrement())
+  Number_Contract     String   @db.VarChar(50)
+  Amount_Contract     String   @db.VarChar(50) // сумма по контракту (оплата)
+  Date_start_Contract DateTime @db.Date
+  Date_end_Contract   DateTime @db.Date
+  Contract_File       String?
+
+  organizationId Int
+  userId         Int
+  organizations  organizations @relation(fields: [organizationId], references: [ID_Organization], onDelete: Cascade)
+  users          users         @relation(fields: [userId], references: [ID_User], onDelete: Cascade)
+  bill           bill[]
+}
+
+model bill {
+  ID_Bill                Int      @id @default(autoincrement())
+  Date_Registration_Bill DateTime
+  Payment_Type_Bill      String   @db.VarChar(50)
+  contractId             Int
+  contract               contract @relation(fields: [contractId], references: [ID_Contract], onDelete: Cascade)
+}
+
+model course {
+  ID_Course      Int              @id @default(autoincrement())
+  Tittle_Course  String           @db.VarChar(50)
+  Teacher_Course Int
+  student_course student_course[]
+  lection        lection[]
+  tests          tests[]
+
+  @@index([Teacher_Course], map: "Teacher_Course")
+}
+
+model lection {
+  ID_Lection     Int    @id @default(autoincrement())
+  Tittle_Lection String @db.VarChar(255)
+  Theme_Lection  String @db.VarChar(255)
+  Format_Lection String @db.VarChar(255)
+  Text_Lection   String @db.LongText()
+  teacherId      Int
+  courseId       Int
+  users          users  @relation(fields: [teacherId], references: [ID_User], onDelete: Cascade)
+  course         course @relation(fields: [courseId], references: [ID_Course], onDelete: Cascade)
+}
+
+model message {
+  ID_Message        Int @id @default(autoincrement())
+  ID_User_Sender    Int
+  ID_User_Recipient Int
+
+  @@index([ID_User_Recipient], map: "ID_User_Recipient")
+  @@index([ID_User_Sender], map: "ID_User_Sender")
+}
+
+model organizations {
+  ID_Organization       Int        @id @default(autoincrement())
+  Tittle_Organization   String     @db.VarChar(50)
+  Director_Organization String     @db.VarChar(100)
+  Payment_account       String     @db.VarChar(50)
+  INN_Organization      Int        @unique(map: "INN_Organization")
+  contract              contract[]
+}
+
+model passed_test {
+  ID_Passed_Test    Int     @id @default(autoincrement())
+  Score_Passed_Test String? @db.VarChar(50)
+  User_Passed_Test  Int
+  Test_Passed_Test  Int
+
+  @@index([Test_Passed_Test], map: "Test_Passed_Test")
+  @@index([User_Passed_Test], map: "User_Passed_Test")
+}
+
+model report {
+  ID_Report    Int  @id @default(autoincrement())
+  Score_Report Int?
+}
+
+model role_user {
+  ID_Role_user     Int     @id @default(autoincrement())
+  Tittle_Role_user String  @db.VarChar(50)
+  users            users[]
+}
+
+model questions {
+  ID_Question     Int             @id @default(autoincrement())
+  Text_Question   String          @db.VarChar(200)
+  Answer_Question String          @db.VarChar(200)
+  test_question   test_question[]
+  teacherId       Int
+  users           users           @relation(fields: [teacherId], references: [ID_User], onDelete: Cascade)
+}
+
+model tests {
+  ID_Test       Int             @id @default(autoincrement())
+  Tittle_test   String          @db.VarChar(50)
+  Deadline_test DateTime        @db.DateTime(0)
+  test_question test_question[]
+  teacherId     Int
+  users         users           @relation(fields: [teacherId], references: [ID_User], onDelete: Cascade)
+
+  courseId Int
+  course   course @relation(fields: [courseId], references: [ID_Course], onDelete: Cascade)
+}
+
+model test_question {
+  id         Int @id @default(autoincrement())
+  testId     Int
+  questionId Int
+
+  tests     tests     @relation(fields: [testId], references: [ID_Test], onDelete: Cascade)
+  questions questions @relation(fields: [questionId], references: [ID_Question], onDelete: Cascade)
+}
+
+model users {
+  ID_User          Int              @id @default(autoincrement())
+  Last_name_User   String           @db.VarChar(50)
+  First_name_User  String           @db.VarChar(50)
+  Middle_name_User String?          @db.VarChar(50)
+  Email_User       String           @unique(map: "Email_User") @db.VarChar(100)
+  Password_User    String           @db.VarChar(255)
+  Date_of_birth    DateTime         @db.Date
+  Sex_User         String           @db.VarChar(50)
+  refreshTokens    RefreshToken[]
+  student_course   student_course[]
+  questions        questions[]
+  Role_user_User   Int
+
+  role_user                role_user                  @relation(fields: [Role_user_User], references: [ID_Role_user], onDelete: Cascade)
+  tests                    tests[]
+  contract                 contract[]
+  lection                  lection[]
+  log_student_reply        log_student_reply[]
+  log_user_change_password log_user_change_password[]
+}
+
+model RefreshToken {
+  id          String   @id @unique @default(uuid())
+  hashedToken String
+  userId      Int
+  User        users    @relation(fields: [userId], references: [ID_User], onDelete: Cascade)
+  revoked     Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model student_course {
+  id        Int @id @default(autoincrement())
+  studentId Int
+  courseId  Int
+
+  users  users  @relation(fields: [studentId], references: [ID_User], onDelete: Cascade)
+  course course @relation(fields: [courseId], references: [ID_Course], onDelete: Cascade)
+}
+
+model log_student_reply {
+  id        Int      @id @default(autoincrement())
+  data      String   @db.LongText()
+  userId    Int
+  users     users    @relation(fields: [userId], references: [ID_User], onDelete: Cascade)
+  createdAt DateTime @default(now())
+}
+
+model log_user_change_password {
+  id        Int      @id @default(autoincrement())
+  pass_old  String   @db.VarChar(128)
+  pass_new  String   @db.VarChar(128)
+  userId    Int
+  users     users    @relation(fields: [userId], references: [ID_User], onDelete: Cascade)
+  createdAt DateTime @default(now())
+}
