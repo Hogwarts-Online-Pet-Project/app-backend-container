@@ -8,7 +8,7 @@ services:
     ports:
       - 3307:3306
     env_file:
-        - .env
+      - .env
     volumes:
       - hogwarts_mysql_volume:/var/lib/mysql/
     healthcheck:
@@ -27,9 +27,21 @@ services:
       - main
     ports:
       - 8547:8547
-    # command: npm run container # run for initializing db and applying migrations
-    command: npm run dev # run after applying migrations
-
+    command: npm run container # run for initializing db and applying migrations
+    # command: npm run dev # run after applying migrations
+  app_phpmyadmin:
+    container_name: app_phpmyadmin
+    image: phpmyadmin
+    restart: always
+    ports:
+      - 8080:80
+    environment:
+      - PMA_ARBITRARY=1
+    depends_on:
+      app_mysql:
+        condition: service_healthy
+    networks:
+      - main
 volumes:
   hogwarts_mysql_volume:
 networks:
